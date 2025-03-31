@@ -1,0 +1,5 @@
+/data
+docker-compose.yaml
+Dockerfile
+app.log
+_pycache_

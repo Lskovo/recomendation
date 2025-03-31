@@ -1,0 +1,21 @@
+[project]
+name = "recomendation"
+version = "0.1.0"
+description = "application for recomendation model"
+authors = [
+    {name = "ludaskov",email = "ludmilaskovo@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy (>=2.2.4,<3.0.0)",
+    "argparse (>=1.4.0,<2.0.0)",
+    "scikit-learn (>=1.6.1,<2.0.0)",
+    "flask (>=3.1.0,<4.0.0)",
+    "logging (>=0.4.9.6,<0.5.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  flask_app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app.log:/app/app.log  # Прокидываем лог-файл наружу
+      - ./data:/app/data        # Прокидываем папку с файлами информации
+    environment:
+      - FLASK_APP=flask_app.py
+      - FLASK_ENV=production
