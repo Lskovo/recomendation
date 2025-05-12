@@ -3,3 +3,5 @@ docker-compose.yaml
 Dockerfile
 app.log
 _pycache_
+/_pycache_
+/test_venv
