@@ -133,6 +133,16 @@ class My_Rec_Model:
         
         return recommendations, rec_ratings
     
+    def predict_for_names(self, movie_names, ratings, n):
+        ids = []
+        for title in movie_names:
+            for row in self.movies:
+                movie_id = row[0]
+                movie_title = row[1]
+                if movie_title == title:
+                    ids.append(int(movie_id))
+        return self.predict(ids, ratings, n)
+    
     def get_movie_titles(self, ids):
         # Возвращает два списка: найденные movie_ids и их названия movie_titles
         #:param ids: list, список ID фильмов
@@ -185,7 +195,7 @@ class My_Rec_Model:
         :return: значение RMSE
         """
         self.warmup()
-        # Загружаем тестовый массив
+        # Загружаем тестовые данные
         r_test = np.loadtxt(test_data_name, dtype='int', delimiter=';')
         
         # Группируем по пользователю
@@ -197,9 +207,9 @@ class My_Rec_Model:
         test_data = []
         for user_id, ratings in user_dict.items():
             if len(ratings) < 2:
-                continue  # нужно минимум 2 оценки: 1 для теста, 1+ для истории
+                continue  # нужно минимум 2 оценки
 
-            ratings = sorted(ratings, key=lambda x: x[0])  # можно сортировать по movie_id или случайно
+            ratings = sorted(ratings, key=lambda x: x[0]) 
             target_movie_id, true_rating = ratings[0]
             history = ratings[1:]
 

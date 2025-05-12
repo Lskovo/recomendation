@@ -26,7 +26,7 @@ def predict():
     n = data.get("n")
     if not n:
         n = 20
-    rec_ids, rec_ratings = model.predict(movies, ratings, n)
+    rec_ids, rec_ratings = model.predict_for_names(movies, ratings, n)
     rec_names = model.get_movie_titles(rec_ids)
     return jsonify({ "rec_names": rec_names, "rec_ratings": rec_ratings}), 200
 
