@@ -28,12 +28,13 @@ def predict():
         n = 20
     rec_ids, rec_ratings = model.predict(movies, ratings, n)
     rec_names = model.get_movie_titles(rec_ids)
-    return jsonify(rec_names=rec_names, rec_ratings=rec_ratings)
+    return jsonify({ "rec_names": rec_names, "rec_ratings": rec_ratings}), 200
 
 @app.route('/api/reload', methods=['POST'])
 def reload():
     model.warmup()
     logging.info("Application started, Model warmed up.")
+    return jsonify({"status": "ok", "message": "Model warmed up successfully."}), 200
 
 @app.route('/api/similar', methods=['POST'])
 def similar():
@@ -42,4 +43,4 @@ def similar():
         return jsonify({"error": "Invalid JSON"}), 400
     name = data.get("movie_name")
     answer = model.similar_for_name(name)
-    return jsonify(sim_names=answer)
+    return jsonify({"sim_names": answer}), 200

@@ -2,6 +2,8 @@ import numpy as np
 import argparse
 import csv
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import mean_squared_error
+from collections import defaultdict
 
 def build_movie_matrix(r_train):
     #Создает матрицу пользователь-фильм и маппинг ID фильмов.
@@ -168,9 +170,59 @@ class My_Rec_Model:
         # Возвращает похожие для фильма по названию
         #:param title: str, название фильма
 
-        for movie_id, movie_title in self.movies:
+        for row in self.movies:
+            movie_id = row[0]
+            movie_title = row[1]
             if movie_title == title:
-                return self.find_similar(movie_id, n)
+                return self.get_similar_movies(int(movie_id), n)
+        return None
+    
+    def evaluate(self, test_data_name):
+        """
+        Загружает данные из файла и вычисляет RMSE.
+        
+        :param test_data_name: путь к файлу с тестовыми данными
+        :return: значение RMSE
+        """
+        self.warmup()
+        # Загружаем тестовый массив
+        r_test = np.loadtxt(test_data_name, dtype='int', delimiter=';')
+        
+        # Группируем по пользователю
+        user_dict = defaultdict(list)
+        for row in r_test:
+            user_id, movie_id, rating = row[:3]
+            user_dict[user_id].append((movie_id, rating))
+
+        test_data = []
+        for user_id, ratings in user_dict.items():
+            if len(ratings) < 2:
+                continue  # нужно минимум 2 оценки: 1 для теста, 1+ для истории
+
+            ratings = sorted(ratings, key=lambda x: x[0])  # можно сортировать по movie_id или случайно
+            target_movie_id, true_rating = ratings[0]
+            history = ratings[1:]
+
+            user_movie_ids = [m for m, _ in history]
+            user_ratings = [r for _, r in history]
+
+            test_data.append((user_movie_ids, user_ratings, target_movie_id, true_rating))
+
+        # Вычисляем RMSE
+        predictions = []
+        true_ratings = []
+
+        for user_movie_ids, user_ratings, target_movie_id, true_rating in test_data:
+            pred_rating = self.predict_rating(target_movie_id, user_movie_ids, user_ratings)
+            predictions.append(pred_rating)
+            true_ratings.append(true_rating)
+
+        predictions = np.array(predictions)
+        true_ratings = np.array(true_ratings)
+
+        rmse = np.sqrt(mean_squared_error(true_ratings, predictions))
+        print(rmse)
+        return rmse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train and evaluate the model.")
@@ -183,3 +235,6 @@ if __name__ == '__main__':
 
     if args.mode == 'train':
         model.train(args.dataset)
+
+    if args.mode == 'evaluate':
+        model.evaluate(args.dataset)
