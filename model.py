@@ -6,7 +6,12 @@ from sklearn.metrics import mean_squared_error
 from collections import defaultdict
 
 def build_movie_matrix(r_train):
-    #Создает матрицу пользователь-фильм и маппинг ID фильмов.
+    """
+    Создает матрицу пользователь-фильм и маппинг ID фильмов.
+
+    :param r_train: данные, которые преобразются в матрицу
+    :return: матрица пользователь-фильм, маппинг название-в-ID и маппинг ID-в-название
+    """
     
     unique_users = np.unique(r_train[:, 0])
     unique_movies = np.unique(r_train[:, 1])
@@ -28,14 +33,23 @@ def build_movie_matrix(r_train):
     return matrix_norm, movie_to_index, index_to_movie
 
 def compute_movie_similarity(movie_matrix):
-    #Вычисляет матрицу сходства между фильмами
+    """
+    Вычисляет матрицу сходства между фильмами
+
+    :param movie_matrix: матрица пользователь-фильм с оценками
+    :return: матрица сходства фильмов
+    """
     movie_matrix = movie_matrix.T
     similarity = cosine_similarity(movie_matrix)  
     return similarity
 
 def normalize_user_ratings_zscore(movie_matrix):
-    #Нормализует оценки пользоветелей.
-    #movie_matrix: Матрица пользователь-фильм с оценками
+    """
+    Нормализует оценки пользоветелей
+
+    :param movie_matrix: матрица пользователь-фильм с оценками
+    :return: матрица пользователь-фильм с нормализованными оценками
+    """
     user_means = np.mean(movie_matrix, axis=1) 
     user_stddevs = np.std(movie_matrix, axis=1)
     movie_matrix_normalized = (movie_matrix - user_means[:, np.newaxis]) / user_stddevs[:, np.newaxis]  # Вычитание среднего и деление на стандартное отклонение
@@ -44,6 +58,9 @@ def normalize_user_ratings_zscore(movie_matrix):
 
 class My_Rec_Model:
     def warmup(self):
+        """
+        Разогрев модели
+        """
         with open("data/model/movie_matrix.csv", "r") as f:
             self.movie_matrix = np.loadtxt(f, delimiter=";")
         with open("data/model/movie_to_index.csv", "r") as f:
@@ -62,6 +79,12 @@ class My_Rec_Model:
         self.movies = np.genfromtxt("data/model/movies.dat", dtype=str, delimiter=";", invalid_raise=False)
 
     def train(self, file_path):
+        """
+        Обучает модель на основе данных в файле
+
+        :param file_path: файл с данными для обучения
+        """
+
         train_file = open(file_path, "r")
         r_train = np.loadtxt(train_file, dtype='int', delimiter=";")
         n_users = len(np.unique(r_train[:, 0]))
@@ -83,14 +106,14 @@ class My_Rec_Model:
         self.warmup()
 
     def recommend(self, movie_ids, ratings, top_n):
-        #Рекомендует фильмы на основе списка фильмов и оценок пользователя.
-        #movie_ids: список id фильмов, которые оценил пользователь
-        #ratings: список оценок пользователя
-        #movie_matrix: матрица пользователь-фильм
-        #similarity_matrix: матрица сходства между фильмами
-        #movie_to_index: словарь {movie_id: номер}
-        #index_to_movie: словарь {номер: movie_id}
-        #top_n: количество рекомендаций
+        """
+        Рассчитывает рекомендованные фильмы на основе списка ID фильмов и оценок пользователя
+
+        :param movie_ids: список id фильмов, которые оценил пользователь
+        :param ratings: список оценок пользователя
+        :param top_n: количество рекомендаций
+        :return: список ID рекомендованных фильмов
+        """
         
         scores = np.zeros(self.movie_matrix.shape[1])
 
@@ -107,6 +130,14 @@ class My_Rec_Model:
         return [self.index_to_movie[idx] for idx in recommended_indices]
     
     def predict_rating(self, movie_id, user_movies, user_ratings):
+        """
+        Предсказывает оценку, который пользователь поставит фильму
+        
+        :param movie_id: ID фильма, который мы предсказываем
+        :param user_movies: список ID фильмов, которые пользователь уже оценил
+        :param user_ratings: список оценок фильмов
+        :return: предсказанная оценка
+        """
         if movie_id not in self.movie_to_index:
             return np.mean(user_ratings)  # Если фильма нет в данных, возвращаем средний рейтинг пользователя
 
@@ -124,6 +155,14 @@ class My_Rec_Model:
         return numer / denom if denom != 0 else np.mean(user_ratings)
 
     def predict(self, movie_ids, ratings, n):
+        """
+        Рекомендует n фильмов для пользователя
+        
+        :param movie_ids: список ID фильмов, которые пользователь уже оценил
+        :param ratings: список оценок фильмов
+        :param n: количество рекомендаций
+        :return: список названий рекомендованных фильмов и список предсказанных оценок
+        """
         recommendations = self.recommend(movie_ids, ratings, top_n = n)
         rec_ratings = []
         
@@ -134,6 +173,14 @@ class My_Rec_Model:
         return recommendations, rec_ratings
     
     def predict_for_names(self, movie_names, ratings, n):
+        """
+        Рекомендует n фильмов для пользователя
+        
+        :param movie_names: список названий фильмов, которые пользователь уже оценил
+        :param ratings: список оценок фильмов
+        :param n: количество рекомендаций
+        :return: список названий рекомендованных фильмов и список предсказанных оценок
+        """
         ids = []
         for title in movie_names:
             for row in self.movies:
@@ -144,9 +191,12 @@ class My_Rec_Model:
         return self.predict(ids, ratings, n)
     
     def get_movie_titles(self, ids):
-        # Возвращает два списка: найденные movie_ids и их названия movie_titles
-        #:param ids: list, список ID фильмов
-        #:return: (list, list) - два списка (ID, Названия)
+        """
+        Возвращает названия movie_titles для фильмов с ID из ids
+
+        :param ids: список ID фильмов
+        :return: список названий
+        """
 
         movie_dict = {int(row[0]): row[1] for row in self.movies}  # {id: название}
         
@@ -162,10 +212,13 @@ class My_Rec_Model:
         return found_titles
     
     def get_similar_movies(self, movie_id, top_n):
-        # Возвращает top_n фильмов, наиболее похожих на заданный movie_id
-        #:param movie_id: int, ID фильма
-        #:param top_n: int, количество рекомендаций
-        #:return: list, список ID похожих фильмов
+        """
+        Возвращает top_n фильмов, наиболее похожих на заданный movie_id
+        
+        :param movie_id: ID фильма
+        :param top_n: количество рекомендаций
+        :return: список названий похожих фильмов
+        """
 
         if movie_id not in self.movie_to_index:
             return []  # Если фильма нет в базе, возвращаем пустой список
@@ -177,8 +230,13 @@ class My_Rec_Model:
         return self.get_movie_titles([self.index_to_movie[idx] for idx in similar_indices])
     
     def similar_for_name(self, title, n=5):
-        # Возвращает похожие для фильма по названию
-        #:param title: str, название фильма
+        """
+        Возвращает похожие для фильма по названию
+
+        :param title: название фильма
+        :param n: количество которое надо порекомендовать (по умолчанию n)
+        :return: названия похожих фильмов
+        """
 
         for row in self.movies:
             movie_id = row[0]
